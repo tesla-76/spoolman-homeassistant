@@ -35,17 +35,7 @@ class SpoolEstimatedRunOut(CoordinatorEntity, SensorEntity):
         self._attr_available = True
         self._flow_rate_entity_id = f"sensor.spoolman_spool_{spool_data['id']}_flow_rate"
 
-        # Set initial name
-        filament = self._spool.get("filament", {})
-        vendor_name = filament.get("vendor", {}).get("name")
-
-        if filament.get("name") and filament.get("material"):
-            if vendor_name:
-                spool_name = f"{vendor_name} {filament['name']} {filament.get('material')}"
-            else:
-                spool_name = f"{filament['name']} {filament.get('material')}"
-        else:
-            spool_name = f"Spoolman Spool {self._spool['id']}"
+        # Display name is resolved via translation_key (see strings.json / translations/*.json).
 
         self.entity_id = generate_entity_id(
             "sensor.{}",
@@ -53,8 +43,8 @@ class SpoolEstimatedRunOut(CoordinatorEntity, SensorEntity):
             hass=hass
         )
         self._attr_unique_id = f"spoolman_{self._entry.entry_id}_spool_{spool_data['id']}_estimated_runout"
-        self._attr_has_entity_name = False
-        self._attr_name = f"{spool_name} Estimated Run Out"
+        self._attr_has_entity_name = True
+        self._attr_translation_key = "estimated_runout"
         self._attr_device_class = SensorDeviceClass.TIMESTAMP
         self._attr_icon = "mdi:clock-alert-outline"
 

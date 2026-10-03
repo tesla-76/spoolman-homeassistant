@@ -62,20 +62,13 @@ class SpoolExtraField(CoordinatorEntity, SensorEntity):
         self._field_key = field_key
         self._attr_available = True
 
-        filament = self._spool.get("filament", {})
-        vendor_name = filament.get("vendor", {}).get("name")
-        if filament.get("name") and filament.get("material"):
-            spool_name = (
-                f"{vendor_name} {filament['name']} {filament.get('material')}"
-                if vendor_name
-                else f"{filament['name']} {filament.get('material')}"
-            )
-        else:
-            spool_name = f"Spoolman Spool {self._spool['id']}"
-
         # Pull metadata reported by Spoolman (`/api/v1/field/spool`) so we can
         # set proper device class / unit / state class. Falls back to a derived
         # display name and a plain icon when metadata isn't available.
+        # NOTE: the field name itself is user data coming from the Spoolman
+        # server, so it is intentionally NOT translated; with
+        # has_entity_name=True Home Assistant renders
+        # "<spool device> <field name>".
         field_meta = (
             (coordinator.data or {})
             .get("extra_fields", {})
@@ -95,8 +88,8 @@ class SpoolExtraField(CoordinatorEntity, SensorEntity):
             hass=hass,
         )
         self._attr_unique_id = f"spoolman_{self._entry.entry_id}_spool_{spool_data['id']}_extra_{safe_field_key}"
-        self._attr_has_entity_name = False
-        self._attr_name = f"{spool_name} Extra {display_name}"
+        self._attr_has_entity_name = True
+        self._attr_name = display_name
 
         device_class, icon = _device_class_for(field_type, unit)
         if device_class is not None:

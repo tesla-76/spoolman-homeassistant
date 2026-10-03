@@ -28,7 +28,6 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
@@ -48,7 +47,6 @@ async def async_setup_entry(
             binary_sensors.append(binary_sensor)
 
         async_add_entities(binary_sensors, True)
-
 
 class SpoolLowFilament(CoordinatorEntity, BinarySensorEntity):
     """Binary sensor that indicates when a spool is running low on filament."""
@@ -71,17 +69,7 @@ class SpoolLowFilament(CoordinatorEntity, BinarySensorEntity):
             config_entry.data.get(CONF_NOTIFICATION_THRESHOLD_WARNING, 75)
         )
 
-        # Get spool name
-        filament = self._spool.get("filament", {})
-        vendor_name = filament.get("vendor", {}).get("name")
-
-        if filament.get("name") and filament.get("material"):
-            if vendor_name:
-                spool_name = f"{vendor_name} {filament['name']} {filament.get('material')}"
-            else:
-                spool_name = f"{filament['name']} {filament.get('material')}"
-        else:
-            spool_name = f"Spoolman Spool {self._spool['id']}"
+        # Display name is resolved via translation_key (see strings.json / translations/*.json).
 
         self.entity_id = generate_entity_id(
             "binary_sensor.{}",
@@ -89,8 +77,8 @@ class SpoolLowFilament(CoordinatorEntity, BinarySensorEntity):
             hass=hass
         )
         self._attr_unique_id = f"spoolman_{self._entry.entry_id}_spool_{spool_data['id']}_low_filament"
-        self._attr_has_entity_name = False
-        self._attr_name = f"{spool_name} Low Filament"
+        self._attr_has_entity_name = True
+        self._attr_translation_key = "low_filament"
         self._attr_device_class = BinarySensorDeviceClass.PROBLEM
         self._attr_icon = "mdi:alert-circle"
 

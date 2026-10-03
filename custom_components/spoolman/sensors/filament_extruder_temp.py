@@ -27,17 +27,12 @@ class FilamentExtruderTemp(CoordinatorEntity, SensorEntity):
         self._entry = config_entry
         self._attr_available = True
 
-        filament = self._spool.get("filament", {})
-        vendor_name = filament.get("vendor", {}).get("name")
-        if filament.get("name") and filament.get("material"):
-            spool_name = f"{vendor_name} {filament['name']} {filament.get('material')}" if vendor_name else f"{filament['name']} {filament.get('material')}"
-        else:
-            spool_name = f"Spoolman Spool {self._spool['id']}"
+        # Display name is resolved via translation_key (see strings.json / translations/*.json).
 
         self.entity_id = generate_entity_id("sensor.{}", f"spoolman_spool_{spool_data['id']}_extruder_temp", hass=hass)
         self._attr_unique_id = f"spoolman_{self._entry.entry_id}_spool_{spool_data['id']}_extruder_temp"
-        self._attr_has_entity_name = False
-        self._attr_name = f"{spool_name} Extruder Temp"
+        self._attr_has_entity_name = True
+        self._attr_translation_key = "extruder_temp"
         self._attr_device_class = SensorDeviceClass.TEMPERATURE
         self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS

@@ -1,0 +1,127 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurazione Spoolman",
+        "data": {
+          "spoolman_url": "Host Spoolman (incl. protocollo)",
+          "notification_threshold_info": "Soglia info (%)",
+          "notification_threshold_warning": "Soglia avviso (%)",
+          "notification_threshold_critical": "Soglia critica (%)",
+          "show_archived": "Mostra bobine archiviate",
+          "klipper_url": "URL Klipper (deprecato)",
+          "klipper_url_desc": "URL Klipper (deprecato)",
+          "update-interval": "Intervallo aggiornamento (minuti)"
+        },
+        "data_description": {
+          "spoolman_url": "Es. http://spoolman:7912",
+          "notification_threshold_info": "Emette spoolman_spool_threshold_exceeded con livello info",
+          "notification_threshold_warning": "Pilota il sensore binario Filamento in esaurimento",
+          "notification_threshold_critical": "Emette spoolman_spool_threshold_exceeded con livello critical",
+          "show_archived": "Crea entità anche per le bobine archiviate",
+          "klipper_url": "Deprecato: configura Spoolman direttamente in Moonraker",
+          "update-interval": "Intervallo di interrogazione in minuti (min. 1)"
+        }
+      }
+    },
+    "error": {
+      "already_configured": "Dispositivo già configurato",
+      "cannot_connect": "Impossibile connettersi a Spoolman",
+      "unknown": "Errore imprevisto"
+    },
+    "abort": {
+      "already_configured": "Dispositivo già configurato"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opzioni Spoolman",
+        "data": {
+          "spoolman_url": "Host Spoolman (incl. protocollo)",
+          "notification_threshold_info": "Soglia info (%)",
+          "notification_threshold_warning": "Soglia avviso (%)",
+          "notification_threshold_critical": "Soglia critica (%)",
+          "show_archived": "Mostra bobine archiviate",
+          "klipper_url": "URL Klipper (deprecato)",
+          "klipper_url_desc": "URL Klipper (deprecato)",
+          "update-interval": "Intervallo aggiornamento (minuti)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "flow_rate": { "name": "Velocità di consumo" },
+      "estimated_runout": { "name": "Esaurimento stimato" },
+      "used_weight": { "name": "Peso usato" },
+      "remaining_length": { "name": "Lunghezza rimanente" },
+      "used_length": { "name": "Lunghezza usata" },
+      "location": { "name": "Posizione" },
+      "used_percentage": { "name": "Percentuale usata" },
+      "registered": { "name": "Registrata" },
+      "first_used": { "name": "Primo utilizzo" },
+      "last_used": { "name": "Ultimo utilizzo" },
+      "price": { "name": "Prezzo" },
+      "spool_weight": { "name": "Peso bobina" },
+      "lot_number": { "name": "Numero lotto" },
+      "comment": { "name": "Commento" },
+      "density": { "name": "Densità" },
+      "diameter": { "name": "Diametro" },
+      "extruder_temp": { "name": "Temperatura estrusore" },
+      "bed_temp": { "name": "Temperatura piatto" },
+      "article_number": { "name": "Codice articolo" },
+      "spool_id": { "name": "ID bobina" },
+      "filament_name": { "name": "Nome filamento" },
+      "material": { "name": "Materiale" },
+      "color_hex": { "name": "Colore" },
+      "vendor": { "name": "Produttore" },
+      "filament_weight": { "name": "Peso filamento" }
+    },
+    "binary_sensor": {
+      "low_filament": { "name": "Filamento in esaurimento" }
+    },
+    "select": {
+      "location": { "name": "Posizione" }
+    }
+  },
+  "services": {
+    "patch_spool": {
+      "name": "Aggiorna bobina",
+      "description": "Aggiorna una qualsiasi proprietà di una bobina Spoolman.",
+      "fields": {
+        "id": { "name": "ID", "description": "ID della bobina" },
+        "first_used": { "name": "Primo utilizzo", "description": "Prima volta che la bobina è stata usata" },
+        "last_used": { "name": "Ultimo utilizzo", "description": "Ultima volta che la bobina è stata usata" },
+        "filament_id": { "name": "ID filamento", "description": "ID del filamento della bobina" },
+        "price": { "name": "Prezzo", "description": "Prezzo della bobina" },
+        "initial_weight": { "name": "Peso iniziale", "description": "Peso iniziale della bobina incluso il filamento" },
+        "spool_weight": { "name": "Peso bobina", "description": "Peso della bobina vuota" },
+        "remaining_weight": { "name": "Peso rimanente", "description": "Peso rimanente del filamento sulla bobina" },
+        "used_weight": { "name": "Peso usato", "description": "Peso del filamento usato dalla bobina" },
+        "location": { "name": "Posizione", "description": "Posizione di stoccaggio della bobina" },
+        "lot_nr": { "name": "Numero lotto", "description": "Numero di lotto del filamento" },
+        "comment": { "name": "Commento", "description": "Commenti sulla bobina" },
+        "archived": { "name": "Archiviata", "description": "Se la bobina è archiviata" },
+        "extra": { "name": "Extra", "description": "Proprietà extra della bobina" }
+      }
+    },
+    "use_spool_filament": {
+      "name": "Usa filamento",
+      "description": "Sottrae peso/lunghezza di filamento usato da una bobina.",
+      "fields": {
+        "id": { "name": "ID", "description": "ID della bobina" },
+        "use_weight": { "name": "Peso usato", "description": "Peso di filamento da scalare dalla bobina (in g)" },
+        "use_length": { "name": "Lunghezza usata", "description": "Lunghezza di filamento da scalare dalla bobina (in mm)" }
+      }
+    }
+  },
+  "common": {
+    "spool_fallback": "Bobina Spoolman {id}",
+    "filament_fallback": "Filamento Spoolman {id}",
+    "unknown": "Sconosciuta",
+    "archived": "Archiviate",
+    "filaments_hub": "Filamenti",
+    "location_prefix": "Posizione: {name}"
+  }
+}
