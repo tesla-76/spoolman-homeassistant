@@ -1,3 +1,5 @@
+Modified version for personal use; all UI text has been moved out of the code and placed in a JSON file (path: custom_components/spoolman/translations) so that it can be easily translated into any language
+
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 [![Validate](https://github.com/Disane87/spoolman-homeassistant/actions/workflows/validate.yml/badge.svg)](https://github.com/Disane87/spoolman-homeassistant/actions/workflows/validate.yml)
