@@ -18,10 +18,12 @@ from ..const import (
     DOMAIN,
     SPOOLMAN_INFO_PROPERTY,
 )
+from ..helpers.labels import build_filament_name, common_label
 
 _LOGGER = logging.getLogger(__name__)
 
 ICON = "mdi:printer-3d-nozzle"
+
 
 class Filament(CoordinatorEntity, SensorEntity):
     """Representation of a Spoolman Filament Sensor."""
@@ -35,16 +37,22 @@ class Filament(CoordinatorEntity, SensorEntity):
         self.config = hass.data[DOMAIN]
 
         self._filament = filament_data
-        self.filament_id = filament_data['id']  # Store ID instead of index
+        self.filament_id = filament_data["id"]  # Store ID instead of index
         self._attr_entity_picture = image_url
         self._attr_available = True
 
         self.assign_name_and_location()
 
         self._entry = config_entry
-        self.entity_id = generate_entity_id("sensor.{}", f"spoolman_filament_{filament_data['id']}", hass=hass)
-        self._attr_unique_id = f"spoolman_{self._entry.entry_id}_filament_{filament_data['id']}"
+        self.entity_id = generate_entity_id(
+            "sensor.{}", f"spoolman_filament_{filament_data['id']}", hass=hass
+        )
+        self._attr_unique_id = (
+            f"spoolman_{self._entry.entry_id}_filament_{filament_data['id']}"
+        )
         self._attr_has_entity_name = False
+        # Name is Spoolman data (vendor/name/material), not a translatable
+        # suffix; it is set to filament_name in assign_name_and_location().
         self._attr_device_class = SensorDeviceClass.WEIGHT
         self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_native_unit_of_measurement = UnitOfMass.GRAMS
@@ -52,36 +60,40 @@ class Filament(CoordinatorEntity, SensorEntity):
         self.idx = idx  # Keep for backwards compatibility, but don't use for lookups
 
     def assign_name_and_location(self):
-        """Update sensor name and device (location)."""
+        """Update sensor name and device (location).
 
-        vendor_name = self._filament.get("vendor", {}).get("name")
+        The filament device name is Spoolman *data* and is not translated;
+        only the hub fallback comes from ``translations/*.json`` (``common``).
+        """
+        hass_cfg = getattr(getattr(self.coordinator, "hass", None), "config", None)
+        lang = getattr(hass_cfg, "language", "en") or "en"
 
-        if (
-            self._filament.get("name") is None
-            or self._filament.get("material") is None
-        ):
-            filament_name = f"Spoolman Filament {self._filament['id']}"
+        if self._filament.get("name") is None or self._filament.get("material") is None:
             _LOGGER.warning(
                 "SpoolManCoordinator: Filament with ID '%s' has no 'name' or 'material' set. Using default name.",
                 self._filament["id"],
             )
-        elif vendor_name is None:
-            filament_name = f"{self._filament['name']} {self._filament.get('material')}"
+        elif self._filament.get("vendor", {}).get("name") is None:
             _LOGGER.warning(
                 "SpoolManCoordinator: Filament with ID '%s' has no 'vendor' set. Using default name.",
                 self._filament["id"],
             )
         else:
-            filament_name = f"{vendor_name} {self._filament['name']} {self._filament.get('material')}"
             _LOGGER.debug(
                 "SpoolManCoordinator: Filament with ID '%s' has 'vendor' set. Using vendor name.",
                 self._filament["id"],
             )
 
-        location_name = "Filaments"
+        filament_name = build_filament_name(self._filament, lang)
+
+        # Stable, language-independent hub identifier (must never be
+        # translated: changing it orphans the device on language switch).
+        # location_name is the display string only.
+        hub_key = "Filaments"
+        location_name = common_label(lang, "filaments_hub", "Filaments")
         spoolman_info = self.config[SPOOLMAN_INFO_PROPERTY]
         device_info = DeviceInfo(
-            identifiers={(DOMAIN, self.config[CONF_URL], location_name)},  # type: ignore
+            identifiers={(DOMAIN, self.config[CONF_URL], hub_key)},  # type: ignore
             name=location_name,
             manufacturer="https://github.com/Donkie/Spoolman",
             model="Spoolman",
@@ -94,8 +106,13 @@ class Filament(CoordinatorEntity, SensorEntity):
         elif self._attr_device_info.get("name") != location_name:
             # Must update entry since async_write_ha_state does not update device
             if self.coordinator.config_entry is not None:
-                device = dr.async_get(self.coordinator.hass).async_get_or_create(config_entry_id=self.coordinator.config_entry.entry_id, **device_info)
-            self.registry_entry = er.async_get(self.coordinator.hass).async_update_entity(self.entity_id, device_id = device.id)
+                device = dr.async_get(self.coordinator.hass).async_get_or_create(
+                    config_entry_id=self.coordinator.config_entry.entry_id,
+                    **device_info,
+                )
+            self.registry_entry = er.async_get(
+                self.coordinator.hass
+            ).async_update_entity(self.entity_id, device_id=device.id)
 
         self._attr_name = filament_name
 
@@ -104,8 +121,12 @@ class Filament(CoordinatorEntity, SensorEntity):
         """Handle updated data from the coordinator."""
         # Use ID-based lookup instead of index to prevent IndexError
         filament_data = next(
-            (f for f in self.coordinator.data.get("filaments", []) if f["id"] == self.filament_id),
-            None
+            (
+                f
+                for f in self.coordinator.data.get("filaments", [])
+                if f["id"] == self.filament_id
+            ),
+            None,
         )
 
         if filament_data is None:

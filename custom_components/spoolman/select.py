@@ -10,6 +10,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
+from .helpers.labels import common_label
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,7 +45,9 @@ async def async_setup_entry(
         _LOGGER.error("Coordinator not found in hass.data[%s]", DOMAIN)
         _LOGGER.error("Available keys in hass.data: %s", list(hass.data.keys()))
         if DOMAIN in hass.data:
-            _LOGGER.error("Keys in hass.data[%s]: %s", DOMAIN, list(hass.data[DOMAIN].keys()))
+            _LOGGER.error(
+                "Keys in hass.data[%s]: %s", DOMAIN, list(hass.data[DOMAIN].keys())
+            )
         return
 
     _LOGGER.info("Coordinator found, checking for data")
@@ -69,7 +72,7 @@ async def async_setup_entry(
         )
         all_entities.append(select_entity)
         existing_spool_ids.add(spool["id"])
-        _LOGGER.debug("Created select entity for spool %s", spool['id'])
+        _LOGGER.debug("Created select entity for spool %s", spool["id"])
 
     _LOGGER.info("Adding %d select entities", len(all_entities))
     async_add_entities(all_entities)
@@ -103,41 +106,32 @@ async def async_setup_entry(
 class SpoolLocationSelect(CoordinatorEntity, SelectEntity):
     """Representation of a Spoolman Spool Location Select."""
 
-    def __init__(
-        self, hass, coordinator, spool_data, locations, config_entry
-    ) -> None:
+    def __init__(self, hass, coordinator, spool_data, locations, config_entry) -> None:
         """Initialize the select entity."""
         super().__init__(coordinator)
 
         self.config = hass.data[DOMAIN]
         self._spool = spool_data
-        self.spool_id = spool_data['id']
-        self._locations = sorted(locations) if locations else ["Unknown"]
+        self.spool_id = spool_data["id"]
+        lang = getattr(getattr(hass, "config", None), "language", "en") or "en"
+        self._locations = (
+            sorted(locations)
+            if locations
+            else [common_label(lang, "unknown", "Unknown")]
+        )
         self._entry = config_entry
 
         self.entity_id = generate_entity_id(
-            "select.{}",
-            f"spoolman_spool_{spool_data['id']}_location",
-            hass=hass
+            "select.{}", f"spoolman_spool_{spool_data['id']}_location", hass=hass
         )
-        self._attr_unique_id = f"spoolman_{self._entry.entry_id}_spool_{spool_data['id']}_location"
-        self._attr_has_entity_name = False
+        self._attr_unique_id = (
+            f"spoolman_{self._entry.entry_id}_spool_{spool_data['id']}_location"
+        )
+        self._attr_has_entity_name = True
+        # Display name is resolved via translation_key (see strings.json / translations/*.json).
+        self._attr_translation_key = "location"
         self._attr_icon = ICON
         self._attr_available = True
-
-        # Set initial name
-        filament = self._spool.get("filament", {})
-        vendor_name = filament.get("vendor", {}).get("name")
-
-        if filament.get("name") and filament.get("material"):
-            if vendor_name:
-                spool_name = f"{vendor_name} {filament['name']} {filament.get('material')}"
-            else:
-                spool_name = f"{filament['name']} {filament.get('material')}"
-        else:
-            spool_name = f"Spoolman Spool {self._spool['id']}"
-
-        self._attr_name = f"{spool_name} Location"
 
         # Set device info to match spool device
         from homeassistant.helpers.device_registry import DeviceInfo
@@ -165,12 +159,10 @@ class SpoolLocationSelect(CoordinatorEntity, SelectEntity):
         try:
             # Get the API wrapper from hass.data using the correct key
             from .const import SPOOLMAN_API_WRAPPER
+
             api = self.hass.data[DOMAIN][SPOOLMAN_API_WRAPPER]
             # Call the patch_spool service to update location
-            await api.patch_spool(
-                self.spool_id,
-                {"location": option}
-            )
+            await api.patch_spool(self.spool_id, {"location": option})
             # Immediately refresh coordinator data
             await self.coordinator.async_request_refresh()
         except Exception as e:
@@ -182,8 +174,12 @@ class SpoolLocationSelect(CoordinatorEntity, SelectEntity):
         """Handle updated data from the coordinator."""
         # Use ID-based lookup
         spool_data = next(
-            (s for s in self.coordinator.data.get("spools", []) if s["id"] == self.spool_id),
-            None
+            (
+                s
+                for s in self.coordinator.data.get("spools", [])
+                if s["id"] == self.spool_id
+            ),
+            None,
         )
 
         if spool_data is None:
@@ -204,6 +200,9 @@ class SpoolLocationSelect(CoordinatorEntity, SelectEntity):
             self.coordinator.data,
             self.coordinator.data.get("spools", []),
         )
-        self._locations = locations if locations else ["Unknown"]
+        lang = getattr(getattr(self.hass, "config", None), "language", "en") or "en"
+        self._locations = (
+            locations if locations else [common_label(lang, "unknown", "Unknown")]
+        )
 
         self.async_write_ha_state()

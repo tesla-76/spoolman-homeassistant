@@ -1,42 +1,127 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "title": "Konfiguration",
-                "data": {
-                    "spoolman_url": "Host (inkl. Protokol)",
-                    "update-interval": "Update Interval (Minuten)",
-                    "show_archived": "Archivierte anzeigen",
-                    "notification_threshold_info": "Schwellenwert Info",
-                    "notification_threshold_warning": "Schwellenwert Warnung",
-                    "notification_threshold_critical": "Schwellenwert Kritisch",
-                    "klipper_url": "Klipper URL",
-                    "klipper_url_desc": "Klipper URL"
-                }
-            }
+  "config": {
+    "step": {
+      "user": {
+        "title": "Spoolman-Konfiguration",
+        "data": {
+          "spoolman_url": "Spoolman-Host (inkl. Protokoll)",
+          "notification_threshold_info": "Info-Schwelle (%)",
+          "notification_threshold_warning": "Warnschwelle (%)",
+          "notification_threshold_critical": "Kritische Schwelle (%)",
+          "show_archived": "Archivierte Spulen anzeigen",
+          "klipper_url": "Klipper-URL (veraltet)",
+          "klipper_url_desc": "Klipper-URL (veraltet)",
+          "update-interval": "Aktualisierungsintervall (Minuten)"
         },
-        "error": {
-            "already_configured": "Device is already configured"
-        },
-        "abort": {
-            "already_configured": "Device is already configured"
+        "data_description": {
+          "spoolman_url": "Z. B. http://spoolman:7912",
+          "notification_threshold_info": "Löst spoolman_spool_threshold_exceeded mit Stufe info aus",
+          "notification_threshold_warning": "Steuert den Binärsensor Filament niedrig",
+          "notification_threshold_critical": "Löst spoolman_spool_threshold_exceeded mit Stufe critical aus",
+          "show_archived": "Entitäten auch für archivierte Spulen erstellen",
+          "klipper_url": "Veraltet: Spoolman direkt in Moonraker konfigurieren",
+          "update-interval": "Abfrageintervall in Minuten (min. 1)"
         }
+      }
     },
-    "options": {
-        "step": {
-            "init": {
-                "title": "Konfiguration",
-                "data": {
-                    "spoolman_url": "Host (inkl. Protokol)",
-                    "update-interval": "Update Interval (Minuten)",
-                    "show_archived": "Archivierte anzeigen",
-                    "notification_threshold_info": "Schwellenwert Info",
-                    "notification_threshold_warning": "Schwellenwert Warnung",
-                    "notification_threshold_critical": "Schwellenwert Kritisch",
-                    "klipper_url": "Klipper URL",
-                    "klipper_url_desc": "Klipper URL"
-                }
-            }
-        }
+    "error": {
+      "already_configured": "Gerät ist bereits konfiguriert",
+      "cannot_connect": "Keine Verbindung zu Spoolman möglich",
+      "unknown": "Unerwarteter Fehler"
+    },
+    "abort": {
+      "already_configured": "Gerät ist bereits konfiguriert"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Spoolman-Optionen",
+        "data": {
+          "spoolman_url": "Spoolman-Host (inkl. Protokoll)",
+          "notification_threshold_info": "Info-Schwelle (%)",
+          "notification_threshold_warning": "Warnschwelle (%)",
+          "notification_threshold_critical": "Kritische Schwelle (%)",
+          "show_archived": "Archivierte Spulen anzeigen",
+          "klipper_url": "Klipper-URL (veraltet)",
+          "klipper_url_desc": "Klipper-URL (veraltet)",
+          "update-interval": "Aktualisierungsintervall (Minuten)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "flow_rate": { "name": "Durchflussrate" },
+      "estimated_runout": { "name": "Voraussichtliches Ende" },
+      "used_weight": { "name": "Verbrauchtes Gewicht" },
+      "remaining_length": { "name": "Restlänge" },
+      "used_length": { "name": "Verbrauchte Länge" },
+      "location": { "name": "Standort" },
+      "used_percentage": { "name": "Verbrauch in Prozent" },
+      "registered": { "name": "Registriert" },
+      "first_used": { "name": "Erstmals verwendet" },
+      "last_used": { "name": "Zuletzt verwendet" },
+      "price": { "name": "Preis" },
+      "spool_weight": { "name": "Spulengewicht" },
+      "lot_number": { "name": "Chargennummer" },
+      "comment": { "name": "Kommentar" },
+      "density": { "name": "Dichte" },
+      "diameter": { "name": "Durchmesser" },
+      "extruder_temp": { "name": "Extrudertemperatur" },
+      "bed_temp": { "name": "Betttemperatur" },
+      "article_number": { "name": "Artikelnummer" },
+      "spool_id": { "name": "Spulen-ID" },
+      "filament_name": { "name": "Filamentname" },
+      "material": { "name": "Material" },
+      "color_hex": { "name": "Farbe" },
+      "vendor": { "name": "Hersteller" },
+      "filament_weight": { "name": "Filamentgewicht" }
+    },
+    "binary_sensor": {
+      "low_filament": { "name": "Filament niedrig" }
+    },
+    "select": {
+      "location": { "name": "Standort" }
+    }
+  },
+  "services": {
+    "patch_spool": {
+      "name": "Spule aktualisieren",
+      "description": "Eine beliebige Eigenschaft einer Spoolman-Spule aktualisieren.",
+      "fields": {
+        "id": { "name": "ID", "description": "ID der Spule" },
+        "first_used": { "name": "Erstmals verwendet", "description": "Erste Verwendung der Spule" },
+        "last_used": { "name": "Zuletzt verwendet", "description": "Letzte Verwendung der Spule" },
+        "filament_id": { "name": "Filament-ID", "description": "ID des Filaments der Spule" },
+        "price": { "name": "Preis", "description": "Preis der Spule" },
+        "initial_weight": { "name": "Anfangsgewicht", "description": "Anfangsgewicht der Spule inkl. Filament" },
+        "spool_weight": { "name": "Spulengewicht", "description": "Gewicht der leeren Spule" },
+        "remaining_weight": { "name": "Restgewicht", "description": "Restgewicht des Filaments auf der Spule" },
+        "used_weight": { "name": "Verbrauchtes Gewicht", "description": "Verbrauchtes Gewicht des Filaments" },
+        "location": { "name": "Standort", "description": "Lagerort der Spule" },
+        "lot_nr": { "name": "Chargennummer", "description": "Chargennummer des Filaments" },
+        "comment": { "name": "Kommentar", "description": "Kommentare zur Spule" },
+        "archived": { "name": "Archiviert", "description": "Ob die Spule archiviert ist" },
+        "extra": { "name": "Extra", "description": "Zusätzliche Eigenschaften der Spule" }
+      }
+    },
+    "use_spool_filament": {
+      "name": "Filament verbrauchen",
+      "description": "Verbrauchtes Filamentgewicht/-länge von einer Spule abziehen.",
+      "fields": {
+        "id": { "name": "ID", "description": "ID der Spule" },
+        "use_weight": { "name": "Verbrauchtes Gewicht", "description": "Zu verbrauchendes Filamentgewicht (in g)" },
+        "use_length": { "name": "Verbrauchte Länge", "description": "Zu verbrauchende Filamentlänge (in mm)" }
+      }
+    }
+  },
+  "common": {
+    "spool_fallback": "Spoolman-Spule {id}",
+    "filament_fallback": "Spoolman-Filament {id}",
+    "unknown": "Unbekannt",
+    "archived": "Archiviert",
+    "filaments_hub": "Filamente",
+    "location_prefix": "Standort: {name}"
+  }
 }

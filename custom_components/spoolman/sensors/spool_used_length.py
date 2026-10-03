@@ -35,17 +35,7 @@ class SpoolUsedLength(CoordinatorEntity, SensorEntity):
         self._entry = config_entry
         self._attr_available = True
 
-        # Get spool name
-        filament = self._spool.get("filament", {})
-        vendor_name = filament.get("vendor", {}).get("name")
-
-        if filament.get("name") and filament.get("material"):
-            if vendor_name:
-                spool_name = f"{vendor_name} {filament['name']} {filament.get('material')}"
-            else:
-                spool_name = f"{filament['name']} {filament.get('material')}"
-        else:
-            spool_name = f"Spoolman Spool {self._spool['id']}"
+        # Display name is resolved via translation_key (see strings.json / translations/*.json).
 
         self.entity_id = generate_entity_id(
             "sensor.{}",
@@ -53,8 +43,8 @@ class SpoolUsedLength(CoordinatorEntity, SensorEntity):
             hass=hass
         )
         self._attr_unique_id = f"spoolman_{self._entry.entry_id}_spool_{spool_data['id']}_used_length"
-        self._attr_has_entity_name = False
-        self._attr_name = f"{spool_name} Used Length"
+        self._attr_has_entity_name = True
+        self._attr_translation_key = "used_length"
         self._attr_device_class = SensorDeviceClass.DISTANCE
         self._attr_state_class = SensorStateClass.TOTAL_INCREASING
         self._attr_native_unit_of_measurement = "mm"

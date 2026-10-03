@@ -20,10 +20,12 @@ from ..const import (
     NOTIFICATION_THRESHOLDS,
     SPOOLMAN_INFO_PROPERTY,
 )
+from ..helpers.labels import build_spool_name, common_label
 
 _LOGGER = logging.getLogger(__name__)
 
 ICON = "mdi:printer-3d-nozzle"
+
 
 class Spool(CoordinatorEntity, SensorEntity):
     """Representation of a Spoolman Sensor."""
@@ -37,7 +39,7 @@ class Spool(CoordinatorEntity, SensorEntity):
         self.config = hass.data[DOMAIN]
 
         self._spool = spool_data
-        self.spool_id = spool_data['id']  # Store ID instead of index
+        self.spool_id = spool_data["id"]  # Store ID instead of index
         self.handled_threshold_events = []
         self._filament = self._spool["filament"]
         self._attr_entity_picture = image_url
@@ -45,9 +47,16 @@ class Spool(CoordinatorEntity, SensorEntity):
         self._entry = config_entry
 
         # Set entity properties first
-        self.entity_id = generate_entity_id("sensor.{}", f"spoolman_spool_{spool_data['id']}", hass=hass)
-        self._attr_unique_id = f"spoolman_{self._entry.entry_id}_spool_{spool_data['id']}"
-        self._attr_has_entity_name = False
+        self.entity_id = generate_entity_id(
+            "sensor.{}", f"spoolman_spool_{spool_data['id']}", hass=hass
+        )
+        self._attr_unique_id = (
+            f"spoolman_{self._entry.entry_id}_spool_{spool_data['id']}"
+        )
+        self._attr_has_entity_name = True
+        # Primary entity: no suffix and no translation_key, so it takes the
+        # spool device name (translatable suffixes live on child sensors).
+        self._attr_name = None
         self._attr_device_class = SensorDeviceClass.WEIGHT
         self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_native_unit_of_measurement = UnitOfMass.GRAMS
@@ -58,43 +67,55 @@ class Spool(CoordinatorEntity, SensorEntity):
         self.assign_name_and_location()
 
     def assign_name_and_location(self):
-        """Update sensor name and device (spool as device, location as via_device)."""
+        """Update sensor name and device (spool as device, location as via_device).
 
-        vendor_name = self._filament.get("vendor", {}).get("name")
+        The spool device name is Spoolman *data* (vendor/name/material) and is
+        therefore not translated; only the fallback templates come from
+        ``strings.json`` / ``translations/*.json`` (``common`` section) via
+        :mod:`helpers.labels`.
+        """
+        hass_cfg = getattr(getattr(self.coordinator, "hass", None), "config", None)
+        lang = getattr(hass_cfg, "language", "en") or "en"
 
-        if (
-            self._filament.get("name") is None
-            or self._filament.get("material") is None
-        ):
-            spool_name = f"Spoolman Spool {self._spool['id']}"
+        if self._filament.get("name") is None or self._filament.get("material") is None:
             _LOGGER.warning(
                 "SpoolManCoordinator: Spool with ID '%s' has no 'name' or 'material' set in filament. Using default name.",
                 self._spool["id"],
             )
-        elif vendor_name is None:
-            spool_name = f"{self._filament['name']} {self._filament.get('material')}"
+        elif self._filament.get("vendor", {}).get("name") is None:
             _LOGGER.warning(
                 "SpoolManCoordinator: Spool with ID '%s' has no 'vendor' set in filament. Using default name.",
                 self._spool["id"],
             )
         else:
-            spool_name = f"{vendor_name} {self._filament['name']} {self._filament.get('material')}"
             _LOGGER.debug(
                 "SpoolManCoordinator: Spool with ID '%s' has 'vendor' set in filament. Using vendor name.",
                 self._spool["id"],
             )
 
-        location_name = (
-            self._spool.get("location", "Unknown")
-            if self._spool["archived"] is False
-            else "Archived"
-        )
+        vendor_name = self._filament.get("vendor", {}).get("name")
+        spool_name = build_spool_name(self._filament, self._spool["id"], lang)
+
+        # Stable, language-independent key for device identifiers (must never
+        # be translated: changing it orphans the device on language switch).
+        # location_name is the display string (server data or translated
+        # fallback) used for device name / suggested area only.
+        if self._spool["archived"] is False:
+            location_key = self._spool.get("location") or "Unknown"
+            location_name = self._spool.get("location") or common_label(
+                lang, "unknown", "Unknown"
+            )
+        else:
+            location_key = "Archived"
+            location_name = common_label(lang, "archived", "Archived")
 
         # Create location hub device (via_device)
         spoolman_info = self.config[SPOOLMAN_INFO_PROPERTY]
         location_device_info = DeviceInfo(
-            identifiers={(DOMAIN, self.config[CONF_URL], f"location_{location_name}")},
-            name=f"Location: {location_name}",
+            identifiers={(DOMAIN, self.config[CONF_URL], f"location_{location_key}")},
+            name=common_label(
+                lang, "location_prefix", "Location: {name}", name=location_name
+            ),
             manufacturer="https://github.com/Donkie/Spoolman",
             model="Spoolman Location Hub",
             configuration_url=self.config[CONF_URL],
@@ -106,9 +127,11 @@ class Spool(CoordinatorEntity, SensorEntity):
         spool_device_info = DeviceInfo(
             identifiers={(DOMAIN, self.config[CONF_URL], f"spool_{self._spool['id']}")},
             name=spool_name,
-            manufacturer=vendor_name if vendor_name else "Unknown",
-            model=f"{self._filament.get('material', 'Unknown')} - {self._filament.get('name', 'Unknown')}",
-            via_device=(DOMAIN, self.config[CONF_URL], f"location_{location_name}"),
+            manufacturer=vendor_name
+            if vendor_name
+            else common_label(lang, "unknown", "Unknown"),
+            model=f"{self._filament.get('material') or common_label(lang, 'unknown', 'Unknown')} - {self._filament.get('name') or common_label(lang, 'unknown', 'Unknown')}",
+            via_device=(DOMAIN, self.config[CONF_URL], f"location_{location_key}"),
             configuration_url=self.config[CONF_URL],
             sw_version=f"Spool ID: {self._spool['id']}",
         )
@@ -120,13 +143,13 @@ class Spool(CoordinatorEntity, SensorEntity):
             # Create or get location hub
             device_registry.async_get_or_create(
                 config_entry_id=self.coordinator.config_entry.entry_id,
-                **location_device_info
+                **location_device_info,
             )
 
             # Create or get spool device
             spool_device = device_registry.async_get_or_create(
                 config_entry_id=self.coordinator.config_entry.entry_id,
-                **spool_device_info
+                **spool_device_info,
             )
 
             # Only update entity if it already exists, otherwise device_info will be used during entity creation
@@ -134,20 +157,25 @@ class Spool(CoordinatorEntity, SensorEntity):
             existing_entity = entity_registry.async_get(self.entity_id)
             if existing_entity:
                 self.registry_entry = entity_registry.async_update_entity(
-                    self.entity_id,
-                    device_id=spool_device.id
+                    self.entity_id, device_id=spool_device.id
                 )
 
         self._attr_device_info = spool_device_info
-        self._attr_name = spool_name  # Use full name for now to avoid confusion
+        # Primary entity follows the spool device name (translated suffixes
+        # live on the child sensors via translation_key).
+        self._attr_name = None
 
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
         # Use ID-based lookup instead of index to prevent IndexError
         spool_data = next(
-            (s for s in self.coordinator.data.get("spools", []) if s["id"] == self.spool_id),
-            None
+            (
+                s
+                for s in self.coordinator.data.get("spools", [])
+                if s["id"] == self.spool_id
+            ),
+            None,
         )
 
         if spool_data is None:
