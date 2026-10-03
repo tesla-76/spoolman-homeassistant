@@ -25,8 +25,11 @@ offline unit tests or a language switch without restart).
 from __future__ import annotations
 
 import json
+import logging
 from functools import lru_cache
 from pathlib import Path
+
+_LOGGER = logging.getLogger(__name__)
 
 # Kept as a literal (instead of importing const.DOMAIN) so this module stays
 # importable standalone, e.g. for offline unit tests. Must match const.DOMAIN.
@@ -129,8 +132,12 @@ async def preload_labels(hass) -> None:
     cached by HA), so later :func:`common_label` calls never touch the
     filesystem inside the event loop.
 
-    Never raises: on any failure the in-memory cache is simply left empty and
-    :func:`common_label` falls back to direct file reads.
+    As a safety net the file cache is *also* warmed in an executor job: even
+    if the translation loader yields nothing for the custom ``common``
+    category, later lookups are pure cache hits and never block the loop.
+
+    Never raises: on any failure the caches are simply left to on-demand
+    (file) reads.
     """
     lang = getattr(getattr(hass, "config", None), "language", "en") or "en"
     labels: dict = {}
@@ -157,6 +164,15 @@ async def preload_labels(hass) -> None:
         }
     except Exception:  # noqa: BLE001 - same reason as above
         pass
+    try:
+        await hass.async_add_executor_job(_load_lang, lang)
+    except Exception:  # noqa: BLE001 - same reason as above
+        pass
+    _LOGGER.debug(
+        "Preloaded %d device labels for language '%s' (file cache warmed)",
+        len(labels),
+        lang,
+    )
 
 
 def build_spool_name(filament: dict | None, spool_id, hass_or_lang="en") -> str:
